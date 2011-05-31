@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import getpass
 import re
 import sys
 import pycurl
@@ -86,7 +87,7 @@ class swedbank:
 
 def main():
     """ Main """
-    usage = "usage: %prog [options] url"
+    usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--username",
         metavar="username", help="Username")
@@ -95,9 +96,21 @@ def main():
     parser.add_option("-a", "--account",
         metavar="account", help="Choose what account you want to see.\nDefault all")
     (options, args) = parser.parse_args()
-    username = options.username
-    password = options.password
-    if not (username and password):
+
+    if not options.username:
+        print "Missing username!"
+        parser.print_help()
+        sys.exit(1)
+    else:
+        username = options.username
+
+    if options.password:
+        password = options.password
+    else:
+        password = getpass.getpass()
+
+    if not password:
+        print "Missing password!"
         parser.print_help()
         sys.exit(1)
 
