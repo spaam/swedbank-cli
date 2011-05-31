@@ -97,7 +97,13 @@ def main():
     (options, args) = parser.parse_args()
     username = options.username
     password = options.password
-    
+    if not username:
+        print "You need a username"
+        sys.exit(1)
+    if not password:
+        print "You need a password"
+        sys.exit(1)
+
     if options.account:
         try:
             account = int(options.account)-1
