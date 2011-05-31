@@ -62,9 +62,14 @@ class swedbank:
         """ Accounts """
         self.request("https://mobilbank.swedbank.se/banking/swedbank/accounts.html","")
         if which == -1:
-            match = re.finditer("(account|loan)\\.html\\?id=([^\"]+)\"[^>]*>\\s*(?:<span\\sclass=\"icon\">[^<]*</span>\\s*)?<span\\s*class=\"name\">([^<]+)</span>\\s*(?:<br/>\\s*)?<span\\s*class=\"amount\">([^<]+)</", self.getdata())
+            match = re.finditer("""
+                <dd\ class="[^"]*"> .*?
+                     <span\ class="name">([^<]+)</span> .*?
+                     <span\ class="amount">([^<]+)</span> .*?
+                </dd>
+            """, self.getdata(), re.X | re.S)
             for i in match:
-                print i.groups()[2] + " " + i.groups()[3]
+                print i.groups()[0] + " " + i.groups()[1]
         else:
             match = re.findall("(account|loan)\\.html\\?id=([^\"]+)\"[^>]*>\\s*(?:<span\\sclass=\"icon\">[^<]*</span>\\s*)?<span\\s*class=\"name\">([^<]+)</span>\\s*(?:<br/>\\s*)?<span\\s*class=\"amount\">([^<]+)</", self.getdata())
             try:
