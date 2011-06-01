@@ -71,9 +71,14 @@ class swedbank:
             for i in match:
                 print i.groups()[0] + " " + i.groups()[1]
         else:
-            match = re.findall("(account|loan)\\.html\\?id=([^\"]+)\"[^>]*>\\s*(?:<span\\sclass=\"icon\">[^<]*</span>\\s*)?<span\\s*class=\"name\">([^<]+)</span>\\s*(?:<br/>\\s*)?<span\\s*class=\"amount\">([^<]+)</", self.getdata())
+            match = re.findall("""
+                <dd\ class="[^"]*"> .*?
+                     <span\ class="name">([^<]+)</span> .*?
+                     <span\ class="amount">([^<]+)</span> .*?
+                </dd>
+            """, self.getdata(), re.X | re.S)
             try:
-                print match[which][2] + " " + match[which][3]
+                print match[which][0] + " " + match[which][1]
             except IndexError:
                 print "Can't find that account"
                 sys.exit(1)
