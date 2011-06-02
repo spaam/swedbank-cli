@@ -20,7 +20,6 @@ class swedbank:
         else:
             tmp = self.pch.open(url)
             self.data = tmp.read()
-            print self.data
 
     def login(self, user, passwd):
         """ Login """
