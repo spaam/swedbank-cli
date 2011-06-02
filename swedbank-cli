@@ -21,7 +21,7 @@ class swedbank:
             tmp = self.pch.open(url)
             self.data = tmp.read()
 
-    def login(self, user, passwd):
+    def login(self, user, passwd, bank):
         """ Login """
         self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html", "")
         data = re.search("csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
@@ -43,6 +43,9 @@ class swedbank:
         self.rstdata()
         self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html", params)
         
+        if re.search("menu\.html\?bank=(\d{1,})\">", self.getdata()):
+            self.request("https://mobilbank.swedbank.se/banking/swedbank/menu.html?bank=" + bank, "")
+
         if not re.search("misslyckats", self.getdata()):
             return 1
         else:
@@ -96,6 +99,8 @@ def main():
         metavar="passwd", help="Password")
     parser.add_option("-a", "--account",
         metavar="account", help="Choose what account you want to see.\nDefault all")
+    parser.add_option("-b", "--bank",
+        metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
     (options, args) = parser.parse_args()
 
     if not options.username:
@@ -109,6 +114,11 @@ def main():
         password = options.password
     else:
         password = getpass.getpass()
+
+    if options.bank:
+        bank = options.bank
+    else:
+        bank = "0"
 
     if not password:
         print "Missing password!"
@@ -125,7 +135,7 @@ def main():
         account = -1
 
     swed = swedbank()
-    if swed.login(username, password):
+    if swed.login(username, password, bank):
         swed.accounts(account)
 
 if __name__ == "__main__":
