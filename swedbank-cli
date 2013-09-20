@@ -49,7 +49,7 @@ class swedbank:
         if not re.search("misslyckats", self.getdata()):
             return 1
         else:
-            print "Wrong username/password"
+            print("Wrong username/password")
             return 0
         
     def accounts(self, which):
@@ -63,7 +63,7 @@ class swedbank:
                 </dd>
             """, self.getdata(), re.X | re.S)
             for i in match:
-                print "%s %s" % (i.groups()[0], i.groups()[1])
+                print("%s %s" % (i.groups()[0], i.groups()[1]))
         else:
             match = re.findall("""
                 <dd\ class="[^"]*"> .*?
@@ -72,9 +72,9 @@ class swedbank:
                 </dd>
             """, self.getdata(), re.X | re.S)
             try:
-                print "%s %s" % (match[which][0], match[which][1])
+                print("%s %s" % (match[which][0], match[which][1]))
             except IndexError:
-                print "Can't find that account"
+                print("Can't find that account")
                 sys.exit(1)
 
     def writedata(self, buf):
@@ -104,7 +104,7 @@ def main():
     (options, args) = parser.parse_args()
 
     if not options.username:
-        print "Missing username!"
+        print("Missing username!")
         parser.print_help()
         sys.exit(1)
     else:
@@ -121,7 +121,7 @@ def main():
         bank = "0"
 
     if not password:
-        print "Missing password!"
+        print("Missing password!")
         parser.print_help()
         sys.exit(1)
 
@@ -129,7 +129,7 @@ def main():
         try:
             account = int(options.account)-1
         except ValueError:
-            print "Account need to be a number."
+            print("Account need to be a number.")
             sys.exit(1)
     else:
         account = -1
