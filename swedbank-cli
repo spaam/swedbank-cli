@@ -18,11 +18,12 @@ class swedbank:
     def request(self, url, post=None):
         """ Make the request"""
         if post:
+            post = bytearray(post, "utf-8")
             tmp = self.pch.open(url, post)
-            self.data = tmp.read()
+            self.data = tmp.read().decode("utf-8")
         else:
             tmp = self.pch.open(url)
-            self.data = tmp.read()
+            self.data = tmp.read().decode("utf-8")
 
     def login(self, user, passwd, bank):
         """ Login """
