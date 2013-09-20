@@ -2,15 +2,18 @@
 import getpass
 import re
 import sys
-import urllib2
 from optparse import OptionParser
+if sys.version_info > (3, 0):
+    from urllib.request import install_opener, build_opener, HTTPCookieProcessor
+else:
+    from urllib2 import install_opener, build_opener, HTTPCookieProcessor
 
 class swedbank:
     def __init__(self):
         """ Set default stuff to pycurl"""
         self.data = ""
-        self.pch = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-        urllib2.install_opener(self.pch)
+        self.pch = build_opener(HTTPCookieProcessor())
+        install_opener(self.pch)
         
     def request(self, url, post):
         """ Make the request"""
