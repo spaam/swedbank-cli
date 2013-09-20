@@ -28,7 +28,7 @@ class swedbank:
     def login(self, user, passwd, bank):
         """ Login """
         self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html")
-        data = re.search("csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
+        data = re.search(r"csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
 
         if not data:
             return 0
@@ -37,7 +37,7 @@ class swedbank:
         self.rstdata()
         params = "auth-method=code&xyz=%s&_csrf_token=%s" % (user, token)
         self.request("https://mobilbank.swedbank.se/banking/swedbank/loginNext.html", params)
-        data = re.search("csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
+        data = re.search(r"csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
 
         if not data:
             return 0
@@ -47,7 +47,7 @@ class swedbank:
         self.rstdata()
         self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html", params)
         
-        if re.search("menu\.html\?bank=(\d{1,})\">", self.getdata()):
+        if re.search(r"menu\.html\?bank=(\d{1,})\">", self.getdata()):
             self.request("https://mobilbank.swedbank.se/banking/swedbank/menu.html?bank=" + bank)
 
         if not re.search("misslyckats", self.getdata()):
@@ -60,7 +60,7 @@ class swedbank:
         """ Accounts """
         self.request("https://mobilbank.swedbank.se/banking/swedbank/accounts.html")
         if which == -1:
-            match = re.finditer("""
+            match = re.finditer(r"""
                 <dd\ class="[^"]*"> .*?
                      <span\ class="name">([^<]+)</span> .*?
                      <span\ class="amount">([^<]+)</span> .*?
@@ -69,7 +69,7 @@ class swedbank:
             for i in match:
                 print("%s %s" % (i.groups()[0], i.groups()[1]))
         else:
-            match = re.findall("""
+            match = re.findall(r"""
                 <dd\ class="[^"]*"> .*?
                      <span\ class="name">([^<]+)</span> .*?
                      <span\ class="amount">([^<]+)</span> .*?
