@@ -81,10 +81,6 @@ class swedbank:
                 print("Can't find that account")
                 sys.exit(1)
 
-    def writedata(self, buf):
-        """ Save the response """
-        self.data += buf
-
     def getdata(self):
         """ Get the response data """
         return self.data
