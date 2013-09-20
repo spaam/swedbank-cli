@@ -31,7 +31,7 @@ class swedbank:
 
         token = data.group(1)
         self.rstdata()
-        params = "auth-method=code&xyz=" + user + "&_csrf_token=" + token
+        params = "auth-method=code&xyz=%s&_csrf_token=%s" % (user, token)
         self.request("https://mobilbank.swedbank.se/banking/swedbank/loginNext.html", params)
         data = re.search("csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
 
@@ -39,7 +39,7 @@ class swedbank:
             return 0
 
         token = data.group(1)
-        params = "zyx=" + passwd + "&_csrf_token=" + token
+        params = "zyx=%s&_csrf_token=%s" % (passwd, token)
         self.rstdata()
         self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html", params)
         
@@ -63,7 +63,7 @@ class swedbank:
                 </dd>
             """, self.getdata(), re.X | re.S)
             for i in match:
-                print i.groups()[0] + " " + i.groups()[1]
+                print "%s %s" % (i.groups()[0], i.groups()[1])
         else:
             match = re.findall("""
                 <dd\ class="[^"]*"> .*?
@@ -72,7 +72,7 @@ class swedbank:
                 </dd>
             """, self.getdata(), re.X | re.S)
             try:
-                print match[which][0] + " " + match[which][1]
+                print "%s %s" % (match[which][0], match[which][1])
             except IndexError:
                 print "Can't find that account"
                 sys.exit(1)
