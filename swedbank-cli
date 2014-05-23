@@ -5,8 +5,10 @@ import sys
 from optparse import OptionParser
 if sys.version_info > (3, 0):
     from urllib.request import install_opener, build_opener, HTTPCookieProcessor
+    from html.parser import HTMLParser
 else:
     from urllib2 import install_opener, build_opener, HTTPCookieProcessor
+    from HTMLParser import HTMLParser
 
 class swedbank:
     def __init__(self):
@@ -81,6 +83,37 @@ class swedbank:
                 print("Can't find that account")
                 sys.exit(1)
 
+    def history(self, which):
+        """ History """
+        if which == -1:
+            account = 0
+        else:
+            account = which
+
+        self.request("https://mobilbank.swedbank.se/banking/swedbank/account.html?id=" + str(account))
+
+        while True:
+            match = re.finditer(r"""
+                <dd .*? > .*?
+                     <span\ class="date">([^<]+)</span> .*?
+                     <span\ class="receiver">([^<]+)</span> .*?
+                     <span\ class="amount">([^<]+)</span> .*?
+                </dd>
+            """, self.getdata(), re.X | re.S)
+            for i in match:
+                print("%s %s %s" % (i.groups()[0], HTMLParser().unescape(i.groups()[1]), i.groups()[2]))
+
+            # Get next page!
+            nextpage = re.match(r"""
+                .*? <a\ href="([^"]+)"\ class="trans-next .*?
+            """, self.getdata(), re.X | re.S)
+
+            if nextpage is None:
+                break
+
+            self.request("https://mobilbank.swedbank.se/banking/swedbank/account.html" + HTMLParser().unescape(nextpage.group(1)))
+
+
     def getdata(self):
         """ Get the response data """
         return self.data
@@ -101,6 +134,8 @@ def main():
         metavar="account", help="Choose what account you want to see.\nDefault all")
     parser.add_option("-b", "--bank",
         metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
+    parser.add_option("-t", "--transactions",
+        action="store_true", dest="transactions", help="Show all available transactions for account.")
     (options, args) = parser.parse_args()
 
     if not options.username:
@@ -137,6 +172,8 @@ def main():
     swed = swedbank()
     if swed.login(username, password, bank):
         swed.accounts(account)
+        if options.transactions:
+            swed.history(account)
 
 if __name__ == "__main__":
     main()
