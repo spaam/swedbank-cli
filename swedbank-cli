@@ -1,141 +1,144 @@
 #!/usr/bin/env python
 import getpass
-import re
 import sys
+import base64
+import uuid
+import random
+import hashlib
+import json
+
 from optparse import OptionParser
 if sys.version_info > (3, 0):
-    from urllib.request import install_opener, build_opener, HTTPCookieProcessor
-    from html.parser import HTMLParser
+    from urllib.request import build_opener, HTTPCookieProcessor, Request
+    from http.cookiejar import CookieJar, Cookie
+    from urllib.error import HTTPError
 else:
-    from urllib2 import install_opener, build_opener, HTTPCookieProcessor
-    from HTMLParser import HTMLParser
+    from urllib2 import build_opener, HTTPCookieProcessor, Request, HTTPError
+    from cookielib import CookieJar, Cookie
 
 class swedbank:
     def __init__(self):
-        """ Set default stuff to pycurl"""
+        """ Set default stuff """
         self.data = ""
-        self.pch = build_opener(HTTPCookieProcessor())
-        install_opener(self.pch)
-        
-    def request(self, url, post=None):
+        self.pch = None
+        self.authkey = None
+        self.cj = CookieJar()
+        self.profile = None
+        self.account = None
+
+    def get_authkey(self):
+        if self.authkey is None:
+            data = "HithYAGrzi8fu73j:%s" % uuid.uuid4()
+            self.authkey = base64.b64encode(data.encode("utf-8")).decode("utf-8")
+        return self.authkey
+
+    def get_dsid(self):
+        data = "%s%s" % (random.randint(0, 99999), random.randint(0, 99999))
+        hash = hashlib.sha1(data.encode("utf-8")).hexdigest()[:8]
+        dsid = "%s%s" % (hash[:4], hash[4:].upper())
+        random.shuffle(list(dsid))
+        return ''.join(dsid)
+
+    def request(self, url, post=None, method="GET"):
         """ Make the request"""
+        dsid = self.get_dsid()
+        baseurl = "https://auth.api.swedbank.se/TDE_DAP_Portal_REST_WEB/api/v1/%s?dsid=%s" % (url, dsid)
+        if self.pch is None:
+            self.pch = build_opener(HTTPCookieProcessor(self.cj))
         if post:
             post = bytearray(post, "utf-8")
-            tmp = self.pch.open(url, post)
-            self.data = tmp.read().decode("utf-8")
+            request = Request(baseurl, data=post)
+            request.add_header("Content-Type", "application/json")
         else:
-            tmp = self.pch.open(url)
-            self.data = tmp.read().decode("utf-8")
+            request = Request(baseurl)
+
+        request.add_header("User-Agent", "SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2")
+        request.add_header("Authorization", self.get_authkey())
+        request.add_header("Accept", "*/*")
+        request.add_header("Accept-Language", "sv-se")
+        request.add_header("Connection", "keep-alive")
+        request.add_header("Proxy-Connection", "keep-alive")
+        self.cj.set_cookie(Cookie(version=0, name='dsid', value=dsid, port=None, port_specified=False, domain='.api.swedbank.se', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpsOnly': None}, rfc2109=False))
+        request.get_method = lambda: method
+        tmp = self.pch.open(request)
+        self.data = tmp.read().decode("utf8")
 
     def login(self, user, passwd, bank):
         """ Login """
-        self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html")
-        data = re.search(r"csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
+        login = json.dumps({"userId": user, "password": passwd, "useEasyLogin": False, "generateEasyLoginId": False})
+        try:
+            self.request("identification/personalcode", post=login, method="POST")
+        except HTTPError as e:
+            error = json.loads(e.read().decode("utf8"))
+            print(error["errorMessages"]["general"][0]["message"])
+            return False
+        try:
+            self.request("profile/")
+        except HTTPError as e:
+            error = json.loads(e.read().decode("utf8"))
+            print(error["errorMessages"]["general"][0]["message"])
+            return False
 
-        if not data:
-            return 0
+        profile = json.loads(self.getdata())
+        self.profile = profile["banks"][0]["privateProfile"]["id"]
+        try:
+            self.request("profile/%s" % self.profile, method="POST")
+        except HTTPError as e:
+            error = json.loads(e.read().decode("utf8"))
+            print(error["errorMessages"]["general"][0]["message"])
+            return False
 
-        token = data.group(1)
-        self.rstdata()
-        params = "auth-method=code&xyz=%s&_csrf_token=%s" % (user, token)
-        self.request("https://mobilbank.swedbank.se/banking/swedbank/loginNext.html", params)
-        data = re.search(r"csrf_token\".*?value=\"([^\"]+)\"", self.getdata())
-
-        if not data:
-            return 0
-
-        token = data.group(1)
-        params = "zyx=%s&_csrf_token=%s" % (passwd, token)
-        self.rstdata()
-        self.request("https://mobilbank.swedbank.se/banking/swedbank/login.html", params)
-        
-        if re.search(r"menu\.html\?bank=(\d{1,})\">", self.getdata()):
-            self.request("https://mobilbank.swedbank.se/banking/swedbank/menu.html?bank=" + bank)
-
-        if not re.search("misslyckats", self.getdata()):
-            return 1
-        else:
-            print("Wrong username/password")
-            return 0
+        return True
         
     def accounts(self, which):
         """ Accounts """
-        self.request("https://mobilbank.swedbank.se/banking/swedbank/accounts.html")
-        if which == -1:
-            match = re.finditer(r"""
-                <dd\ class="[^"]*"> .*?
-                     <span\ class="name">([^<]+)</span> .*?
-                     <span\ class="amount">([^<]+)</span> .*?
-                </dd>
-            """, self.getdata(), re.X | re.S)
-            for i in match:
-                print("%s %s" % (i.groups()[0], i.groups()[1]))
-        else:
-            match = re.findall(r"""
-                <dd\ class="[^"]*"> .*?
-                     <span\ class="name">([^<]+)</span> .*?
-                     <span\ class="amount">([^<]+)</span> .*?
-                </dd>
-            """, self.getdata(), re.X | re.S)
-            try:
-                print("%s %s" % (match[which][0], match[which][1]))
-            except IndexError:
-                print("Can't find that account")
-                sys.exit(1)
+        try:
+            self.request("engagement/overview")
+        except HTTPError as e:
+            error = json.loads(e.read().decode("utf8"))
+            print(error["errorMessages"]["general"][0]["message"])
+            return
+        overview = json.loads(self.getdata())
+        overviewl = reversed(list(overview))
+        for i in overviewl:
+            if len(overview[i]) > 0:
+                for n in overview[i]:
+                    if self.account is None and "id" in n:
+                        self.account = n["id"]
+                    print("%s: %s" % (n["name"], n["balance"]))
 
     def history(self, which):
         """ History """
-        if which == -1:
-            account = 0
-        else:
-            account = which
+        print("Transactions:")
+        try:
+            self.request("engagement/transactions/%s" % self.account)
+        except HTTPError as e:
+            error = json.loads(e.read().decode("utf8"))
+            print(error["errorMessages"]["general"][0]["message"])
+            return
 
-        self.request("https://mobilbank.swedbank.se/banking/swedbank/account.html?id=" + str(account))
-
-        while True:
-            match = re.finditer(r"""
-                <dd .*? > .*?
-                     <span\ class="date">([^<]+)</span> .*?
-                     <span\ class="receiver">([^<]+)</span> .*?
-                     <span\ class="amount">([^<]+)</span> .*?
-                </dd>
-            """, self.getdata(), re.X | re.S)
-            for i in match:
-                print("%s %s %s" % (i.groups()[0], HTMLParser().unescape(i.groups()[1]), i.groups()[2]))
-
-            # Get next page!
-            nextpage = re.match(r"""
-                .*? <a\ href="([^"]+)"\ class="trans-next .*?
-            """, self.getdata(), re.X | re.S)
-
-            if nextpage is None:
-                break
-
-            self.request("https://mobilbank.swedbank.se/banking/swedbank/account.html" + HTMLParser().unescape(nextpage.group(1)))
-
+        transactions = json.loads(self.getdata())["transactions"]
+        for i in transactions:
+            print("%s %s %s" % (i["date"], i["description"], i["amount"]))
 
     def getdata(self):
         """ Get the response data """
         return self.data
-
-    def rstdata(self):
-        """ Reset response"""
-        self.data = None
 
 def main():
     """ Main """
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--username",
-        metavar="username", help="Username")
+                      metavar="username", help="Username")
     parser.add_option("-p", "--password",
-        metavar="passwd", help="Password")
+                      metavar="passwd", help="Password")
     parser.add_option("-a", "--account",
-        metavar="account", help="Choose what account you want to see.\nDefault all")
+                      metavar="account", help="Choose what account you want to see.\nDefault all")
     parser.add_option("-b", "--bank",
-        metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
+                      metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
     parser.add_option("-t", "--transactions",
-        action="store_true", dest="transactions", help="Show all available transactions for account.")
+                      action="store_true", dest="transactions", help="Show all available transactions for account.")
     (options, args) = parser.parse_args()
 
     if not options.username:
