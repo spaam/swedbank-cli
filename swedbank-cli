@@ -25,10 +25,19 @@ class swedbank:
         self.cj = CookieJar()
         self.profile = None
         self.account = None
+        self.banks = None
+        self.banks = {"swedbank": {"id":"HithYAGrzi8fu73j", "u-a":"SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken": {"id":"9iZSu74jfDFaTdPd", "u-a":"SavingbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "swedbank_ung": {"id":"IV4Wrt2VZtyYjfpW", "u-a":"SwedbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken_ung": {"id":"BrGkZQR89rEbFwnj", "u-a":"SavingbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "swedbank_foretag": {"id":"v0RVbFGKMXz7U4Eb", "u-a":"SwedbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken_foretag": {"id":"JPf1VxiskNdFSclr", "u-a":"SavingbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"}}
+        self.useragent = None
+        self.bankid = None
 
     def get_authkey(self):
         if self.authkey is None:
-            data = "HithYAGrzi8fu73j:%s" % uuid.uuid4()
+            data = "%s:%s" % (self.bankid, uuid.uuid4())
             self.authkey = base64.b64encode(data.encode("utf-8")).decode("utf-8")
         return self.authkey
 
@@ -52,7 +61,7 @@ class swedbank:
         else:
             request = Request(baseurl)
 
-        request.add_header("User-Agent", "SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2")
+        request.add_header("User-Agent", self.useragent)
         request.add_header("Authorization", self.get_authkey())
         request.add_header("Accept", "*/*")
         request.add_header("Accept-Language", "sv-se")
@@ -65,6 +74,11 @@ class swedbank:
 
     def login(self, user, passwd, bank):
         """ Login """
+        if bank not in self.banks:
+            print("Can't find that bank.")
+            return False
+        self.useragent = self.banks[bank]["u-a"]
+        self.bankid = self.banks[bank]["id"]
         login = json.dumps({"userId": user, "password": passwd, "useEasyLogin": False, "generateEasyLoginId": False})
         try:
             self.request("identification/personalcode", post=login, method="POST")
@@ -121,6 +135,9 @@ class swedbank:
         for i in transactions:
             print("%s %s %s" % (i["date"], i["description"], i["amount"]))
 
+    def listbanks(self):
+        for i in self.banks.keys():
+            print(i)
     def getdata(self):
         """ Get the response data """
         return self.data
@@ -137,6 +154,8 @@ def main():
                       metavar="account", help="Choose what account you want to see.\nDefault all")
     parser.add_option("-b", "--bank",
                       metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
+    parser.add_option("-B", "--list-banks",
+                      action="store_true" , dest="listbanks", default=False, help="List banks to choose from")
     parser.add_option("-t", "--transactions",
                       action="store_true", dest="transactions", help="Show all available transactions for account.")
     (options, args) = parser.parse_args()
@@ -156,7 +175,7 @@ def main():
     if options.bank:
         bank = options.bank
     else:
-        bank = "0"
+        bank = "swedbank"
 
     if not password:
         print("Missing password!")
@@ -173,7 +192,9 @@ def main():
         account = -1
 
     swed = swedbank()
-    if swed.login(username, password, bank):
+    if options.listbanks:
+        swed.listbanks()
+    elif swed.login(username, password, bank):
         swed.accounts(account)
         if options.transactions:
             swed.history(account)
