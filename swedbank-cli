@@ -139,8 +139,11 @@ class swedbank:
             print("%s %s %s" % (i["date"], i["description"], i["amount"]))
 
     def listbanks(self):
-        for i in self.banks.keys():
-            print(i)
+        for i in sorted(self.banks.keys()):
+            if i == "swedbank":
+                print("%s (default)" % i)
+            else:
+                print(i)
     def getdata(self):
         """ Get the response data """
         return self.data
