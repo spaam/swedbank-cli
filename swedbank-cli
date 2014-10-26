@@ -43,8 +43,8 @@ class swedbank:
 
     def get_dsid(self):
         data = "%s%s" % (random.randint(0, 99999), random.randint(0, 99999))
-        hash = hashlib.sha1(data.encode("utf-8")).hexdigest()[:8]
-        dsid = "%s%s" % (hash[:4], hash[4:].upper())
+        hashvalue = hashlib.sha1(data.encode("utf-8")).hexdigest()[:8]
+        dsid = "%s%s" % (hashvalue[:4], hashvalue[4:].upper())
         random.shuffle(list(dsid))
         return ''.join(dsid)
 
@@ -106,7 +106,7 @@ class swedbank:
             return False
 
         return True
-        
+
     def accounts(self, which):
         """ Accounts """
         try:
@@ -148,6 +148,7 @@ class swedbank:
         """ Get the response data """
         return self.data
 
+
 def main():
     """ Main """
     usage = "usage: %prog [options]"
@@ -161,7 +162,7 @@ def main():
     parser.add_option("-b", "--bank",
                       metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
     parser.add_option("-B", "--list-banks",
-                      action="store_true" , dest="listbanks", default=False, help="List banks to choose from")
+                      action="store_true", dest="listbanks", default=False, help="List banks to choose from")
     parser.add_option("-t", "--transactions",
                       action="store_true", dest="transactions", help="Show all available transactions for account.")
     (options, args) = parser.parse_args()
