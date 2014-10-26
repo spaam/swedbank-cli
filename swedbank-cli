@@ -94,6 +94,9 @@ class swedbank:
             return False
 
         profile = json.loads(self.getdata())
+        if len(profile["banks"]) == 0:
+            print("Using wrong bank? Can't find any bank info.")
+            return False
         self.profile = profile["banks"][0]["privateProfile"]["id"]
         try:
             self.request("profile/%s" % self.profile, method="POST")
