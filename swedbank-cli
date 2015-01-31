@@ -97,7 +97,10 @@ class swedbank:
         if len(profile["banks"]) == 0:
             print("Using wrong bank? Can't find any bank info.")
             return False
-        self.profile = profile["banks"][0]["privateProfile"]["id"]
+        try:
+            self.profile = profile["banks"][0]["privateProfile"]["id"]
+        except KeyError:
+            self.profile = profile['banks'][0]['corporateProfiles'][0]["id"]
         try:
             self.request("profile/%s" % self.profile, method="POST")
         except HTTPError as e:
