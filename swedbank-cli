@@ -163,7 +163,7 @@ def main():
     parser.add_option("-a", "--account",
                       metavar="account", help="Choose what account you want to see.\nDefault all")
     parser.add_option("-b", "--bank",
-                      metavar="bank", help="Choose which bank you want to use.\nDefault first bank")
+                      metavar="bank", help="Choose which bank you want to use.\nDefault first bank", default="swedbank")
     parser.add_option("-B", "--list-banks",
                       action="store_true", dest="listbanks", default=False, help="List banks to choose from")
     parser.add_option("-t", "--transactions",
@@ -186,10 +186,7 @@ def main():
     else:
         password = getpass.getpass()
 
-    if options.bank:
-        bank = options.bank
-    else:
-        bank = "swedbank"
+    bank = options.bank
 
     if not password:
         print("Missing password!")
