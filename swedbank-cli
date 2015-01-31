@@ -84,7 +84,7 @@ class swedbank:
             self.request("identification/personalcode", post=login, method="POST")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["general"][0]["message"])
+            print(error["errorMessages"]["fields"][0]["message"])
             return False
         try:
             self.request("profile/")
