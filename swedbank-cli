@@ -110,7 +110,7 @@ class swedbank:
 
         return True
 
-    def accounts(self, which):
+    def accounts(self):
         """ Accounts """
         try:
             self.request("engagement/overview")
@@ -127,7 +127,7 @@ class swedbank:
                         self.account = n["id"]
                     print("%s: %s" % (n["name"], n["balance"]))
 
-    def history(self, which):
+    def history(self):
         """ History """
         print("Transactions:")
         try:
@@ -160,8 +160,6 @@ def main():
                       metavar="username", help="Username")
     parser.add_option("-p", "--password",
                       metavar="passwd", help="Password")
-    parser.add_option("-a", "--account",
-                      metavar="account", help="Choose what account you want to see.\nDefault all")
     parser.add_option("-b", "--bank",
                       metavar="bank", help="Choose which bank you want to use.\nDefault first bank", default="swedbank")
     parser.add_option("-B", "--list-banks",
@@ -192,20 +190,10 @@ def main():
         print("Missing password!")
         sys.exit(1)
 
-    if options.account:
-        try:
-            account = int(options.account)-1
-        except ValueError:
-            print("Account need to be a number.")
-            sys.exit(1)
-    else:
-        account = -1
-
-
     if swed.login(username, password, bank):
-        swed.accounts(account)
+        swed.accounts()
         if options.transactions:
-            swed.history(account)
+            swed.history()
 
 if __name__ == "__main__":
     main()
