@@ -170,9 +170,13 @@ def main():
                       action="store_true", dest="transactions", help="Show all available transactions for account.")
     (options, args) = parser.parse_args()
 
+    swed = swedbank()
+    if options.listbanks:
+        swed.listbanks()
+        sys.exit(2)
+
     if not options.username:
         print("Missing username!")
-        parser.print_help()
         sys.exit(1)
     else:
         username = options.username
@@ -189,7 +193,6 @@ def main():
 
     if not password:
         print("Missing password!")
-        parser.print_help()
         sys.exit(1)
 
     if options.account:
@@ -201,10 +204,8 @@ def main():
     else:
         account = -1
 
-    swed = swedbank()
-    if options.listbanks:
-        swed.listbanks()
-    elif swed.login(username, password, bank):
+
+    if swed.login(username, password, bank):
         swed.accounts(account)
         if options.transactions:
             swed.history(account)
