@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import getpass
+# -*- coding: utf-8 -*-
+
 import sys
 import base64
 import uuid
@@ -7,7 +8,6 @@ import random
 import hashlib
 import json
 
-from optparse import OptionParser
 if sys.version_info > (3, 0):
     from urllib.request import build_opener, HTTPCookieProcessor, Request
     from http.cookiejar import CookieJar, Cookie
@@ -16,7 +16,8 @@ else:
     from urllib2 import build_opener, HTTPCookieProcessor, Request, HTTPError
     from cookielib import CookieJar, Cookie
 
-class swedbank:
+
+class Swedbank(object):
     def __init__(self):
         """ Set default stuff """
         self.data = ""
@@ -153,53 +154,7 @@ class swedbank:
                 print("%s (default)" % i)
             else:
                 print(i)
+
     def getdata(self):
         """ Get the response data """
         return self.data
-
-
-def main():
-    """ Main """
-    usage = "usage: %prog [options]"
-    parser = OptionParser(usage=usage)
-    parser.add_option("-u", "--username",
-                      metavar="username", help="Username")
-    parser.add_option("-p", "--password",
-                      metavar="passwd", help="Password")
-    parser.add_option("-b", "--bank",
-                      metavar="bank", help="Choose which bank you want to use.\nDefault first bank", default="swedbank")
-    parser.add_option("-B", "--list-banks",
-                      action="store_true", dest="listbanks", default=False, help="List banks to choose from")
-    parser.add_option("-t", "--transactions",
-                      action="store_true", dest="transactions", help="Show all available transactions for account.")
-    (options, args) = parser.parse_args()
-
-    swed = swedbank()
-    if options.listbanks:
-        swed.listbanks()
-        sys.exit(2)
-
-    if not options.username:
-        print("Missing username!")
-        sys.exit(1)
-    else:
-        username = options.username
-
-    if options.password:
-        password = options.password
-    else:
-        password = getpass.getpass()
-
-    bank = options.bank
-
-    if not password:
-        print("Missing password!")
-        sys.exit(1)
-
-    if swed.login(username, password, bank):
-        swed.accounts()
-        if options.transactions:
-            swed.history()
-
-if __name__ == "__main__":
-    main()
