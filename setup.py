@@ -6,11 +6,12 @@ from distutils.core import setup
 setup(
         name='pyswedbank',
         packages=['pyswedbank'],
-        version='0.0.1',
+        version='0.0.2',
         description='A python wrapper for swedbank api.',
         author='Magnus Knutas',
         author_email='magnusknutas@gmail.com',
         url='https://github.com/spaam/swedbank-cli',
         keywords=['banking', 'api', 'wrapper'],  # arbitrary keywords
         classifiers=[],
+        scripts=['pyswedbank/swedbank-cli']
 )
