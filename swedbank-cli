@@ -125,7 +125,13 @@ class swedbank:
                 for n in overview[i]:
                     if self.account is None and "id" in n:
                         self.account = n["id"]
-                    print("%s: %s" % (n["name"], n["balance"]))
+                    if n.get('balance'):
+                        print("%s: %s" % (n["name"], n["balance"]))
+                    elif n.get('availableAmount', None):
+                        print("%s: %s" % (n["name"], n["availableAmount"]))
+
+                    else:
+                        print(n)
 
     def history(self):
         """ History """
