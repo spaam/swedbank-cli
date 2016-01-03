@@ -1,0 +1,3 @@
+include README
+include LICENSE.txt
+recursive-exclude * *.py[co]
