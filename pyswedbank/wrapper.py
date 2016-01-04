@@ -175,10 +175,8 @@ class Swedbank(object):
                         self.account = n["id"]
                     if n.get('balance'):
                         ret.append({n['name']: n['balance']})
-                        logger.debug("%s: %s" % (n["name"], n["balance"]))
                     elif n.get('availableAmount', None):
                         ret.append({n['name']: n['availableAmount']})
-                        logger.debug("%s: %s" % (n["name"], n["availableAmount"]))
 
                     else:
                         logger.error("Unable to parse %s", n)
@@ -188,16 +186,16 @@ class Swedbank(object):
         """ History """
         logger.info("Transactions:")
         try:
+            logger.debug("Account: %s", self.account)
             self.request("engagement/transactions/%s" % self.account)
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            logger,error(error["errorMessages"]["general"][0]["message"])
+            logger.error(error["errorMessages"]["general"][0]["message"])
             return
 
         transactions = json.loads(self.getdata())["transactions"]
         ret = list()
         for i in transactions:
-            logger.debug("%s %s %s" % (i["date"], i["description"], i["amount"]))
             ret.append([i["date"], i["description"], i["amount"]])
         return ret
 
