@@ -1,59 +1,85 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import getpass
+import argparse
 import logging
-import sys
-from optparse import OptionParser
+import pprint
 
-from pyswedbank.wrapper import Swedbank
+import coloredlogs
+import sys
+
+from pyswedbank.wrapper import Swedbank, SWEDBANK
 
 logger = logging.getLogger(__name__)
 
+help_text = "Cli to fetch status of swedbank accounts"
+
 
 def main():
-    """ Main """
-    usage = "usage: %prog [options]"
-    parser = OptionParser(usage=usage)
-    parser.add_option("-u", "--username",
-                      metavar="username", help="Username")
-    parser.add_option("-p", "--password",
-                      metavar="passwd", help="Password")
-    parser.add_option("-b", "--bank",
-                      metavar="bank", help="Choose which bank you want to use.\nDefault first bank", default="swedbank")
-    parser.add_option("-B", "--list-banks",
-                      action="store_true", dest="listbanks", default=False, help="List banks to choose from")
-    parser.add_option("-t", "--transactions",
-                      action="store_true", dest="transactions", help="Show all available transactions for account.")
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument(
+            'username',
+            metavar='username',
+            type=str,
+            help="your social security number"
+    )
+    parser.add_argument(
+            '-l',
+            '--log-level',
+            action='store',
+            type=str,
+            dest='log_level',
+            help='''
+                [DEBUG, INFO(default), WARNING, ERROR, EXCEPTION]
+                ''',
+            default='INFO'
+    )
+    parser.add_argument(
+            "-p",
+            "--password",
+            type=str,
+            action='store',
+            dest='password',
+            help="Password for your account"
+    )
+    parser.add_argument(
+            "-b",
+            "--bank",
+            metavar="bank",
+            help="Defaults to swedbank, banks available: %s" % Swedbank.banks(),
+            default=SWEDBANK
+    )
+    parser.add_argument(
+            "-t",
+            "--transactions",
+            action="store_true",
+            dest="transactions",
+            help="Show all available transactions for account."
+    )
 
+    args = parser.parse_args()
+    numeric_level = getattr(logging, args.log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % args.log_level)
+    coloredlogs.install(level=numeric_level)
+    logger.debug('Log level set to %s', args.log_level)
 
-
-    swed = Swedbank()
-    if options.listbanks:
-        swed.listbanks()
-        return
-
-    if not options.username:
-        logger.error("Missing username!")
-        return
-    else:
-        username = options.username
-
-    if options.password:
-        password = options.password
+    if args.password:
+        password = args.password
     else:
         password = getpass.getpass()
 
-    bank = options.bank
+    bank = args.bank
 
     if not password:
         logger.error("Missing password!")
         return
 
-    if swed.login(username, password, bank):
-        swed.accounts()
-        if options.transactions:
-            swed.history()
+    swed = Swedbank(args.username, password, bank)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(swed.accounts())
+    if args.transactions:
+        pp.pprint(swed.history())
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import logging
 import sys
 import base64
 import uuid
@@ -15,6 +15,8 @@ if sys.version_info > (3, 0):
 else:
     from urllib2 import build_opener, HTTPCookieProcessor, Request, HTTPError
     from cookielib import CookieJar, Cookie
+
+logger = logging.getLogger(__name__)
 
 SWEDBANK = "swedbank"
 SPARBANKEN = "sparbanken"
@@ -52,7 +54,7 @@ class Swedbank(object):
         }
     }
 
-    def __init__(self):
+    def __init__(self, username, password, bank=SWEDBANK):
         """ Set default stuff """
         self.data = ""
         self.pch = None
@@ -62,6 +64,7 @@ class Swedbank(object):
         self.account = None
         self.useragent = None
         self.bankid = None
+        self.login(username, password, bank)
 
     def get_authkey(self):
         if self.authkey is None:
@@ -113,8 +116,9 @@ class Swedbank(object):
 
     def login(self, user, passwd, bank):
         """ Login """
+        logger.info("login...")
         if bank not in self.BANKS:
-            print("Can't find that bank.")
+            logger.error("Can't find that bank.")
             return False
         self.useragent = self.BANKS[bank]["u-a"]
         self.bankid = self.BANKS[bank]["id"]
@@ -126,18 +130,18 @@ class Swedbank(object):
                          method="POST")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["fields"][0]["message"])
+            logger.error(error["errorMessages"]["fields"][0]["message"])
             return False
         try:
             self.request("profile/")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["general"][0]["message"])
+            logger.error(error["errorMessages"]["general"][0]["message"])
             return False
 
         profile = json.loads(self.getdata())
         if len(profile["banks"]) == 0:
-            print("Using wrong bank? Can't find any bank info.")
+            logger.error("Using wrong bank? Can't find any bank info.")
             return False
         try:
             self.profile = profile["banks"][0]["privateProfile"]["id"]
@@ -147,57 +151,59 @@ class Swedbank(object):
             self.request("profile/%s" % self.profile, method="POST")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["general"][0]["message"])
+            logger.error(error["errorMessages"]["general"][0]["message"])
             return False
 
         return True
 
     def accounts(self):
         """ Accounts """
+        logger.info("Fetching data...")
         try:
             self.request("engagement/overview")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["general"][0]["message"])
+            logger.error(error["errorMessages"]["general"][0]["message"])
             return
         overview = json.loads(self.getdata())
         overviewl = reversed(list(overview))
+        ret = list()
         for i in overviewl:
             if len(overview[i]) > 0:
                 for n in overview[i]:
                     if self.account is None and "id" in n:
                         self.account = n["id"]
                     if n.get('balance'):
-                        print("%s: %s" % (n["name"], n["balance"]))
+                        ret.append({n['name']: n['balance']})
+                        logger.debug("%s: %s" % (n["name"], n["balance"]))
                     elif n.get('availableAmount', None):
-                        print("%s: %s" % (n["name"], n["availableAmount"]))
+                        ret.append({n['name']: n['availableAmount']})
+                        logger.debug("%s: %s" % (n["name"], n["availableAmount"]))
 
                     else:
-                        print(n)
+                        logger.error("Unable to parse %s", n)
+        return ret
 
     def history(self):
         """ History """
-        print("Transactions:")
+        logger.info("Transactions:")
         try:
             self.request("engagement/transactions/%s" % self.account)
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
-            print(error["errorMessages"]["general"][0]["message"])
+            logger,error(error["errorMessages"]["general"][0]["message"])
             return
 
         transactions = json.loads(self.getdata())["transactions"]
+        ret = list()
         for i in transactions:
-            print("%s %s %s" % (i["date"], i["description"], i["amount"]))
+            logger.debug("%s %s %s" % (i["date"], i["description"], i["amount"]))
+            ret.append([i["date"], i["description"], i["amount"]])
+        return ret
 
     @staticmethod
     def banks():
-        ret = ""
-        for i in sorted(Swedbank.BANKS.keys()):
-            if i == "swedbank":
-                ret += "\n%s (default)" % i
-            else:
-                ret += "\n%s" % i
-        return ret
+        return list(Swedbank.BANKS.keys())
 
     def getdata(self):
         """ Get the response data """
