@@ -18,6 +18,13 @@ else:
 
 
 class Swedbank(object):
+    BANKS = {"swedbank": {"id":"HithYAGrzi8fu73j", "u-a":"SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken": {"id":"9iZSu74jfDFaTdPd", "u-a":"SavingbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "swedbank_ung": {"id":"IV4Wrt2VZtyYjfpW", "u-a":"SwedbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken_ung": {"id":"BrGkZQR89rEbFwnj", "u-a":"SavingbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "swedbank_foretag": {"id":"v0RVbFGKMXz7U4Eb", "u-a":"SwedbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
+                      "sparbanken_foretag": {"id":"JPf1VxiskNdFSclr", "u-a":"SavingbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"}}
+
     def __init__(self):
         """ Set default stuff """
         self.data = ""
@@ -26,13 +33,6 @@ class Swedbank(object):
         self.cj = CookieJar()
         self.profile = None
         self.account = None
-        self.banks = None
-        self.banks = {"swedbank": {"id":"HithYAGrzi8fu73j", "u-a":"SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken": {"id":"9iZSu74jfDFaTdPd", "u-a":"SavingbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "swedbank_ung": {"id":"IV4Wrt2VZtyYjfpW", "u-a":"SwedbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken_ung": {"id":"BrGkZQR89rEbFwnj", "u-a":"SavingbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "swedbank_foretag": {"id":"v0RVbFGKMXz7U4Eb", "u-a":"SwedbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken_foretag": {"id":"JPf1VxiskNdFSclr", "u-a":"SavingbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"}}
         self.useragent = None
         self.bankid = None
 
@@ -53,8 +53,10 @@ class Swedbank(object):
         """ Make the request"""
         dsid = self.get_dsid()
         baseurl = "https://auth.api.swedbank.se/TDE_DAP_Portal_REST_WEB/api/v1/%s?dsid=%s" % (url, dsid)
+
         if self.pch is None:
             self.pch = build_opener(HTTPCookieProcessor(self.cj))
+
         if post:
             post = bytearray(post, "utf-8")
             request = Request(baseurl, data=post)
@@ -75,11 +77,11 @@ class Swedbank(object):
 
     def login(self, user, passwd, bank):
         """ Login """
-        if bank not in self.banks:
+        if bank not in self.BANKS:
             print("Can't find that bank.")
             return False
-        self.useragent = self.banks[bank]["u-a"]
-        self.bankid = self.banks[bank]["id"]
+        self.useragent = self.BANKS[bank]["u-a"]
+        self.bankid = self.BANKS[bank]["id"]
         login = json.dumps({"userId": user, "password": passwd, "useEasyLogin": False, "generateEasyLoginId": False})
         try:
             self.request("identification/personalcode", post=login, method="POST")
@@ -148,12 +150,15 @@ class Swedbank(object):
         for i in transactions:
             print("%s %s %s" % (i["date"], i["description"], i["amount"]))
 
-    def listbanks(self):
-        for i in sorted(self.banks.keys()):
+    @staticmethod
+    def banks():
+        ret = ""
+        for i in sorted(Swedbank.BANKS.keys()):
             if i == "swedbank":
-                print("%s (default)" % i)
+                ret += "\n%s (default)" % i
             else:
-                print(i)
+                ret += "\n%s" % i
+        return ret
 
     def getdata(self):
         """ Get the response data """
