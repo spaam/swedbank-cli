@@ -22,7 +22,7 @@ Swedbank will eventually remove password login, there will be changes on how to 
 There will be work done to make this more library like. EX:
 
     >>> from pyswedbank import Swedank
-    >>> swe = Swedbank(username, password)
+    >>> swe = Swedbank(username, password='password')
     >>> print(swe.list_accounts())
     {'account1 name': 1500000.4, 'account2 name': 1200000.4}  # Money!!!
     >>> acc = swe.get_account('account1 name')
