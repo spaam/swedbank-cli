@@ -15,7 +15,7 @@ reqs = [str(ir.req) for ir in install_reqs]
 setup(
         name='pyswedbank',
         packages=['pyswedbank'],
-        version='1.0',
+        version='1.1',
         install_requires=reqs,
         description='A python wrapper for swedbank api.',
         author='Magnus Knutas',
