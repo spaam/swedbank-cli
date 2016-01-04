@@ -16,14 +16,41 @@ else:
     from urllib2 import build_opener, HTTPCookieProcessor, Request, HTTPError
     from cookielib import CookieJar, Cookie
 
+SWEDBANK = "swedbank"
+SPARBANKEN = "sparbanken"
+SWEDBANK_UNG = "swedbank_ung"
+SPARBANKEN_UNG = "sparbanken_ung"
+SWEDBANK_FORETAG = "swedbank_foretag"
+SPARBANKEN_FORETAG = "sparbanken_foretag"
+
 
 class Swedbank(object):
-    BANKS = {"swedbank": {"id":"HithYAGrzi8fu73j", "u-a":"SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken": {"id":"9iZSu74jfDFaTdPd", "u-a":"SavingbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "swedbank_ung": {"id":"IV4Wrt2VZtyYjfpW", "u-a":"SwedbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken_ung": {"id":"BrGkZQR89rEbFwnj", "u-a":"SavingbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "swedbank_foretag": {"id":"v0RVbFGKMXz7U4Eb", "u-a":"SwedbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"},
-                      "sparbanken_foretag": {"id":"JPf1VxiskNdFSclr", "u-a":"SavingbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"}}
+    BANKS = {
+        SWEDBANK: {
+            "id": "HithYAGrzi8fu73j",
+            "u-a": "SwedbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        },
+        SPARBANKEN: {
+            "id": "9iZSu74jfDFaTdPd",
+            "u-a": "SavingbankMOBPrivateIOS/3.9.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        },
+        SWEDBANK_UNG: {
+            "id": "IV4Wrt2VZtyYjfpW",
+            "u-a": "SwedbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        },
+        SPARBANKEN_UNG: {
+            "id": "BrGkZQR89rEbFwnj",
+            "u-a": "SavingbankMOBYouthIOS/1.6.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        },
+        SWEDBANK_FORETAG: {
+            "id": "v0RVbFGKMXz7U4Eb",
+            "u-a": "SwedbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        },
+        SPARBANKEN_FORETAG: {
+            "id": "JPf1VxiskNdFSclr",
+            "u-a": "SavingbankMOBCorporateIOS/1.5.0_(iOS;_8.0.2)_Apple/iPhone5,2"
+        }
+    }
 
     def __init__(self):
         """ Set default stuff """
@@ -39,7 +66,8 @@ class Swedbank(object):
     def get_authkey(self):
         if self.authkey is None:
             data = "%s:%s" % (self.bankid, uuid.uuid4())
-            self.authkey = base64.b64encode(data.encode("utf-8")).decode("utf-8")
+            self.authkey = base64.b64encode(data.encode("utf-8")).decode(
+                    "utf-8")
         return self.authkey
 
     def get_dsid(self):
@@ -52,7 +80,8 @@ class Swedbank(object):
     def request(self, url, post=None, method="GET"):
         """ Make the request"""
         dsid = self.get_dsid()
-        baseurl = "https://auth.api.swedbank.se/TDE_DAP_Portal_REST_WEB/api/v1/%s?dsid=%s" % (url, dsid)
+        baseurl = "https://auth.api.swedbank.se/TDE_DAP_Portal_REST_WEB/api/v1/%s?dsid=%s" % (
+            url, dsid)
 
         if self.pch is None:
             self.pch = build_opener(HTTPCookieProcessor(self.cj))
@@ -70,7 +99,14 @@ class Swedbank(object):
         request.add_header("Accept-Language", "sv-se")
         request.add_header("Connection", "keep-alive")
         request.add_header("Proxy-Connection", "keep-alive")
-        self.cj.set_cookie(Cookie(version=0, name='dsid', value=dsid, port=None, port_specified=False, domain='.api.swedbank.se', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpsOnly': None}, rfc2109=False))
+        self.cj.set_cookie(
+                Cookie(version=0, name='dsid', value=dsid, port=None,
+                       port_specified=False, domain='.api.swedbank.se',
+                       domain_specified=False, domain_initial_dot=False,
+                       path='/',
+                       path_specified=True, secure=False, expires=None,
+                       discard=True, comment=None, comment_url=None,
+                       rest={'HttpsOnly': None}, rfc2109=False))
         request.get_method = lambda: method
         tmp = self.pch.open(request)
         self.data = tmp.read().decode("utf8")
@@ -82,9 +118,12 @@ class Swedbank(object):
             return False
         self.useragent = self.BANKS[bank]["u-a"]
         self.bankid = self.BANKS[bank]["id"]
-        login = json.dumps({"userId": user, "password": passwd, "useEasyLogin": False, "generateEasyLoginId": False})
+        login = json.dumps(
+                {"userId": user, "password": passwd, "useEasyLogin": False,
+                 "generateEasyLoginId": False})
         try:
-            self.request("identification/personalcode", post=login, method="POST")
+            self.request("identification/personalcode", post=login,
+                         method="POST")
         except HTTPError as e:
             error = json.loads(e.read().decode("utf8"))
             print(error["errorMessages"]["fields"][0]["message"])
